@@ -2,10 +2,12 @@ const express = require('express');
 const path = require('path');
 const app = express(exports);
 const line = require('@line/bot-sdk');
+const Obniz = require("obniz");
 
 const PORT = process.env.PORT || 5000;
 const LINE_CHANNEL_TOKEN = process.env.LINE_CHANNEL_TOKEN;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
+const OBNIZ_ID = process.env.OBNIZ_ID;
 
 // express()
 //   .use(express.static(path.join(__dirname, 'public')))
@@ -19,6 +21,7 @@ const config = {
   channelSecret: LINE_CHANNEL_SECRET,
 };
 
+// create LINE SDK client
 const client = new line.Client(config);
 
 app.post('/webhook',  line.middleware(config), (req, res) => {
@@ -33,19 +36,54 @@ app.post('/webhook',  line.middleware(config), (req, res) => {
 });
 
 function handleEvent(event) {
-        console.log(event);
-        if (event.type === 'message' && event.message.type === 'text') {
-                const echo = { type: 'text',  text: event.message.text };
-                console.log(echo);
-                return client.replyMessage(event.replyToken, echo);
-        }else if(event.type === 'beacon' && event.beacon){
-                const message = { type: 'text', text: 'beacon device(${event.beacon.hwid})から${event.beacon.dm}が届いたよ' };
-                console.log(message);
-                return client.replyMessage(event.replyToken, message);
-        }
-        return Promise.resolve(null);
+// async function handleEvent(event) {
+    console.log(event);
+    if (event.type === 'message' && event.message.type === 'text' && 
+        event.message.text === 'Clap') {
+        //パチパチさせる
+        clap(event.source.userId);
+        //待ってとだけ返す
+        const echo = { type: 'text',  text: 'Please Wait...' };
+        console.log(echo);
+        return client.replyMessage(event.replyToken, echo);
+    }else if (event.type === 'message' && event.message.type === 'text') {
+        const echo2 = { type: 'text',  text: event.message.text };
+        console.log(echo2);
+        return client.replyMessage(event.replyToken, echo2);
+    }else if(event.type === 'beacon' && event.beacon){
+        const message = { type: 'text',
+            text: `近くにクラッピーがいるよ。${event.beacon.hwid}` };
+        console.log(message);
+        return client.replyMessage(event.replyToken, message);
+    }
+    return Promise.resolve(null);
+}
+
+async function clap(userId) {
+    let obniz = new Obniz(OBNIZ_ID);
+    let connected = await obniz.connectWait({timeout:5});
+    if(!connected){ return false; }
+    var leds = obniz.wired("WS2812", {gnd:2, vcc: 0, din: 1});
+    servo = obniz.wired("ServoMotor", {signal:3,vcc:4, gnd:5});
+    servo.on();
+    obniz.display.clear();
+    obniz.display.print("Hello obniz!");
+    for (let i=0; i<3; i++) {
+        servo.angle(15);
+        leds.rgb(0, 0, 0); // off
+        await obniz.wait(1000);
+        servo.angle(55);
+        leds.rgb(255, 0, 0); // red
+        await obniz.wait(1000);
+    }
+    await client.pushMessage(userId, {
+       type: 'text',
+       text: '８８８８８',
+    });
+    // コネクションを切断する
+    obniz.close();
+    return true;
 }
 
 app.set('port', PORT);
-
 app.listen(PORT, () => console.log(`Listening on ${ PORT }`))
