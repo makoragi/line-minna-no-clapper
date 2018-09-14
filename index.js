@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 5000;
 const LINE_CHANNEL_TOKEN = process.env.LINE_CHANNEL_TOKEN;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 const OBNIZ_ID = process.env.OBNIZ_ID;
+const OBNIZ_TOKEN = process.env.OBNIZ_TOKEN;
 
 // express()
 //   .use(express.static(path.join(__dirname, 'public')))
@@ -74,10 +75,10 @@ function handleEvent(event) {
 }
 
 async function clap(userId) {
-    let obniz = new Obniz(OBNIZ_ID);
-    let connected = await obniz.connectWait({timeout:5});
+    let obniz = new Obniz(OBNIZ_ID, { access_token: OBNIZ_TOKEN })
+    let connected = await obniz.connectWait({timeout:5})
     if(!connected){ return false; }
-    var leds = obniz.wired("WS2812", {gnd:2, vcc: 0, din: 1});
+    let leds = obniz.wired("WS2812", {gnd:2, vcc: 0, din: 1});
     servo = obniz.wired("ServoMotor", {signal:3,vcc:4, gnd:5});
     servo.on();
     obniz.display.clear();
