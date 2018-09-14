@@ -37,24 +37,38 @@ app.post('/webhook',  line.middleware(config), (req, res) => {
 
 function handleEvent(event) {
 // async function handleEvent(event) {
+    var echo;
     console.log(event);
-    if (event.type === 'message' && event.message.type === 'text' && 
-        event.message.text === 'Clap') {
-        //パチパチさせる
-        clap(event.source.userId);
-        //待ってとだけ返す
-        const echo = { type: 'text',  text: 'Please Wait...' };
+    if (event.type === 'message' && event.message.type === 'text') {
+        if (event.message.text === 'Clap') {
+            //パチパチさせる
+            clap(event.source.userId);
+            //待ってとだけ返す
+            echo = { type: 'text',  text: 'Please Wait...' };
+        } else if (event.message.text === 'Menu') {
+            echo = { type: 'template', altText: 'button templete',
+                template: {
+                    type: 'buttons', text: 'ボタン',
+                    actions: [
+                        { type: 'postback', data: 'ppp', label: 'ラベル' }
+                    ]
+                }
+            };
+        } else {
+            //オウム返し
+            echo = { type: 'text',  text: event.message.text };
+        }
         console.log(echo);
         return client.replyMessage(event.replyToken, echo);
-    }else if (event.type === 'message' && event.message.type === 'text') {
-        const echo2 = { type: 'text',  text: event.message.text };
-        console.log(echo2);
-        return client.replyMessage(event.replyToken, echo2);
     }else if(event.type === 'beacon' && event.beacon){
         const message = { type: 'text',
             text: `近くにクラッピーがいるよ。${event.beacon.hwid}` };
         console.log(message);
         return client.replyMessage(event.replyToken, message);
+    }else if(event.type === 'postback') {
+        echo = { type: 'text',  text: event.postback.data };
+        console.log(echo);
+        return client.replyMessage(event.replyToken, echo);
     }
     return Promise.resolve(null);
 }
