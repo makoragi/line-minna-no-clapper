@@ -36,40 +36,72 @@ app.post('/webhook',  line.middleware(config), (req, res) => {
         });
 });
 
+//ビーコン検出でのテンプレートメニュー表示
+function handleEventMenu(event) {
+    let echo = {
+        type: 'template',
+        altText: 'button templete',
+        template: {
+            type: 'buttons', text: ' ',
+            actions: [
+                { type: 'postback', data: 'Clap', label: 'Clap' }
+            ]
+        }
+    };
+    console.log(echo);
+    return client.replyMessage(event.replyToken, echo);
+}
+
+function handleEventEmu(event) {
+    let echo = { type: 'text',  text: "８８８８" };
+    console.log(echo);
+    return client.replyMessage(event.replyToken, echo);
+}
+
+function handleEventClap(event) {
+    //パチパチさせる
+    clap(event.source.userId);
+    let echo = { type: 'text',  text: '８８８８８８' };
+    console.log(echo);
+    return client.replyMessage(event.replyToken, echo);
+}
+
 function handleEvent(event) {
 // async function handleEvent(event) {
-    var echo;
+    let echo;
     console.log(event);
     if (event.type === 'message' && event.message.type === 'text') {
         if (event.message.text === 'Clap') {
-            //パチパチさせる
-            clap(event.source.userId);
-            //待ってとだけ返す
-            echo = { type: 'text',  text: 'Please Wait...' };
+            handleEventEmu(event);
         } else if (event.message.text === 'Menu') {
-            echo = { type: 'template', altText: 'button templete',
-                template: {
-                    type: 'buttons', text: 'ボタン',
-                    actions: [
-                        { type: 'postback', data: 'ppp', label: 'ラベル' }
-                    ]
-                }
-            };
+            handleEventMenu(event);
+        } else if (event.message.text === 'Time') {
+            echo = { type: 'text', text: 'start' };
+            setTimeout(() => {
+                console.log('timeout');
+                client.pushMessage(event.source.userId, {
+                   type: 'text', text: 'timeout',
+                });
+            }, 5000);
+            console.log(echo);
+            return client.replyMessage(event.replyToken, echo);
+        } else if (event.message.text === 'Change') {
+            echo = { type: 'text', text: 'start' };
+            setInterval(() => {
+                console.log('interval');
+                // client.pushMessage(event.source.userId, {
+                //    type: 'text', text: 'interval',
+                // });
+            }, 5000);
+            console.log(echo);
+            return client.replyMessage(event.replyToken, echo);
         } else {
             //オウム返し
-            echo = { type: 'text',  text: event.message.text };
         }
-        console.log(echo);
-        return client.replyMessage(event.replyToken, echo);
     }else if(event.type === 'beacon' && event.beacon){
-        const message = { type: 'text',
-            text: `近くにクラッピーがいるよ。${event.beacon.hwid}` };
-        console.log(message);
-        return client.replyMessage(event.replyToken, message);
-    }else if(event.type === 'postback') {
-        echo = { type: 'text',  text: event.postback.data };
-        console.log(echo);
-        return client.replyMessage(event.replyToken, echo);
+        handleEventMenu(event);
+    }else if(event.type === 'postback' && event.postback.data === 'Clap') {
+        handleEventClap(event);
     }
     return Promise.resolve(null);
 }
@@ -77,7 +109,10 @@ function handleEvent(event) {
 async function clap(userId) {
     let obniz = new Obniz(OBNIZ_ID, { access_token: OBNIZ_TOKEN })
     let connected = await obniz.connectWait({timeout:5})
-    if(!connected){ return false; }
+    if(!connected){
+        console.log("Obniz is not connected.");
+        return false;
+    }
     let leds = obniz.wired("WS2812", {gnd:2, vcc: 0, din: 1});
     servo = obniz.wired("ServoMotor", {signal:3,vcc:4, gnd:5});
     servo.on();
@@ -91,10 +126,10 @@ async function clap(userId) {
         leds.rgb(255, 0, 0); // red
         await obniz.wait(1000);
     }
-    await client.pushMessage(userId, {
-       type: 'text',
-       text: '８８８８８',
-    });
+    // await client.pushMessage(userId, {
+    //    type: 'text',
+    //    text: '８８８８８',
+    // });
     // コネクションを切断する
     obniz.close();
     return true;
