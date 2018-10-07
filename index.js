@@ -9,6 +9,7 @@ const LINE_CHANNEL_TOKEN = process.env.LINE_CHANNEL_TOKEN;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 const OBNIZ_ID = process.env.OBNIZ_ID;
 const OBNIZ_TOKEN = process.env.OBNIZ_TOKEN;
+const BASEURL = process.env.BASEURL;
 
 // express()
 //   .use(express.static(path.join(__dirname, 'public')))
@@ -40,11 +41,17 @@ app.post('/webhook',  line.middleware(config), (req, res) => {
 function handleEventMenu(event) {
     let echo = {
         type: 'template',
-        altText: 'button templete',
+        altText: 'ボタンだよ',
         template: {
-            type: 'buttons', text: ' ',
+            type: 'buttons',
+            text: 'クラッピーがいるよ',
+            thumbnailImageUrl: BASEURL+'/clapper_button.png',
             actions: [
-                { type: 'postback', data: 'Clap', label: 'Clap' }
+                {
+                    type: 'postback',
+                    data: 'Clap',
+                    label: '押してね'
+                }
             ]
         }
     };
@@ -113,27 +120,21 @@ async function clap(userId) {
         console.log("Obniz is not connected.");
         return false;
     }
-    let leds = obniz.wired("WS2812", {gnd:2, vcc: 0, din: 1});
     servo = obniz.wired("ServoMotor", {signal:3,vcc:4, gnd:5});
     servo.on();
-    obniz.display.clear();
-    obniz.display.print("Hello obniz!");
+    servo.angle(55);
+    await obniz.wait(200);
     for (let i=0; i<3; i++) {
         servo.angle(15);
-        leds.rgb(0, 0, 0); // off
-        await obniz.wait(1000);
+        await obniz.wait(200);
         servo.angle(55);
-        leds.rgb(255, 0, 0); // red
-        await obniz.wait(1000);
+        await obniz.wait(200);
     }
-    // await client.pushMessage(userId, {
-    //    type: 'text',
-    //    text: '８８８８８',
-    // });
     // コネクションを切断する
     obniz.close();
     return true;
 }
 
+app.use(express.static(path.join(__dirname, 'public')));
 app.set('port', PORT);
 app.listen(PORT, () => console.log(`Listening on ${ PORT }`))
