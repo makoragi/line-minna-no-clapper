@@ -20,7 +20,8 @@
   },
   "devDependencies": {
     "request": "^2.81.0",
-    "tape": "^4.7.0"
+    "tape": "^4.7.0",
+    "follow-redirects": ">=1.14.7"
   },
   "repository": {
     "type": "git",
